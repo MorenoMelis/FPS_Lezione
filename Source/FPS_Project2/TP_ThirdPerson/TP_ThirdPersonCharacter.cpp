@@ -141,6 +141,9 @@ void ATP_ThirdPersonCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATP_ThirdPersonCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ATP_ThirdPersonCharacter::MoveRight);
 
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ATP_ThirdPersonCharacter::CrouchCharacter);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ATP_ThirdPersonCharacter::StopCrouchCharacter);
+
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
 	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
@@ -292,6 +295,10 @@ void ATP_ThirdPersonCharacter::StopCrouchCharacter() {
 // Mechanic: Fire with weapon
 
 void ATP_ThirdPersonCharacter::FireFromWeapon() {
+	if( bIsReloading)
+	{
+		return;
+	}
 	FCollisionQueryParams Params;
 	// Ignore the player's pawn
 	Params.AddIgnoredActor(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
@@ -317,6 +324,7 @@ void ATP_ThirdPersonCharacter::FireFromWeapon() {
 	if (bHit) {
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 3.0f);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Arsenal[ActiveWeapon].HitEFX, Hit.ImpactPoint);
+		UGameplayStatics::PlaySound2D(this, Arsenal[ActiveWeapon].SoundEFX, 1.0f, 1.0f, 0);
 		// AEnemy* HitActor = Cast<AEnemy>(Hit.GetActor());
 
 		// if (HitActor) {
@@ -409,6 +417,10 @@ bool ATP_ThirdPersonCharacter::CheckAroundMe(float Radius) {
 // Mechanic: Reload
 
 void ATP_ThirdPersonCharacter::ReloadWeapon() {
+	if(MagBullets == Arsenal[ActiveWeapon].MagCapacity || bIsReloading)
+	{
+		return;
+	}
 	if (!bIsUsingArch) {
 		GEngine->AddOnScreenDebugMessage(-1, 5.2f, FColor::Red, TEXT("Start Reload!"));
 		bIsReloading = true;
